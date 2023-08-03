@@ -1,3 +1,9 @@
+import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
+
+
 def plot_bar_chart(dataframe: pd.DataFrame, x_column: str, y_column: str, colormap: str = 'viridis',
                    title: str = None, horizontal: bool = False, show_mean_median: bool = False,
                    show_number: bool = False) -> None:
