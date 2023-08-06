@@ -4,11 +4,19 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 
 
-def plot_bar_chart(dataframe: pd.DataFrame, x_column: str, y_column: str, colormap: str = 'viridis',
-                   title: str = None, horizontal: bool = False, show_mean_median: bool = False,
-                   show_number: bool = False) -> None:
+def plot_bar_chart(
+    dataframe: pd.DataFrame,
+    x_column: str,
+    y_column: str,
+    colormap: str = "viridis",
+    title: str = None,
+    horizontal: bool = False,
+    show_mean_median: bool = False,
+    show_number: bool = False,
+    average_line: bool = False,
+) -> None:
     """
-    Generate a bar chart using the provided DataFrame.
+     Generate a bar chart using the provided DataFrame.
 
     Parameters:
         dataframe (pd.DataFrame): The DataFrame containing the data for the bar chart.
@@ -23,6 +31,8 @@ def plot_bar_chart(dataframe: pd.DataFrame, x_column: str, y_column: str, colorm
                                            corner of the chart with a frame. Default is False.
         show_number (bool, optional): If True, the values of each bar will be displayed at the top of the bar.
                                       Default is False.
+        average_line (bool, optional): If True, a line showing the average value will be added to the chart.
+                                      Default is False.
 
     Returns:
         None: The function displays the bar chart directly without returning anything.
@@ -35,8 +45,14 @@ def plot_bar_chart(dataframe: pd.DataFrame, x_column: str, y_column: str, colorm
     fig = go.Figure()
 
     if horizontal:
-        fig.add_trace(go.Bar(y=df[x_column], x=df[y_column], orientation='h', marker=dict(
-            color=df[y_column], colorscale=colormap)))
+        fig.add_trace(
+            go.Bar(
+                y=df[x_column],
+                x=df[y_column],
+                orientation="h",
+                marker=dict(color=df[y_column], colorscale=colormap),
+            )
+        )
         fig.update_xaxes(title_text=y_column)
         fig.update_yaxes(title_text=x_column)
         # Invert y-axis for horizontal bar chart
@@ -47,15 +63,20 @@ def plot_bar_chart(dataframe: pd.DataFrame, x_column: str, y_column: str, colorm
                 fig.add_annotation(
                     x=value,
                     y=df[x_column].iloc[index],
-                    text=f'{value:.2f}',
+                    text=f"{value:.2f}",
                     showarrow=False,
                     xshift=20,
                     font=dict(size=12),
                 )
 
     else:
-        fig.add_trace(go.Bar(x=df[x_column], y=df[y_column], marker=dict(
-            color=df[y_column], colorscale=colormap)))
+        fig.add_trace(
+            go.Bar(
+                x=df[x_column],
+                y=df[y_column],
+                marker=dict(color=df[y_column], colorscale=colormap),
+            )
+        )
         fig.update_xaxes(title_text=x_column)
         fig.update_yaxes(title_text=y_column)
         # Display values at the top of each bar if show_number is True
@@ -64,7 +85,7 @@ def plot_bar_chart(dataframe: pd.DataFrame, x_column: str, y_column: str, colorm
                 fig.add_annotation(
                     x=df[x_column].iloc[index],
                     y=value,
-                    text=f'{value:.2f}',
+                    text=f"{value:.2f}",
                     showarrow=False,
                     yshift=5,
                     font=dict(size=12),
@@ -77,28 +98,180 @@ def plot_bar_chart(dataframe: pd.DataFrame, x_column: str, y_column: str, colorm
         median_value = df[y_column].median()
 
         # Adding mean and median values in the top-right corner of the chart with a frame
-        text_to_display = f'Mean: {mean_value:.2f}<br>Median: {median_value:.2f}'
+        text_to_display = f"Mean: {mean_value:.2f}<br>Median: {median_value:.2f}"
         fig.add_annotation(
             x=0.99,
             y=0.99,
-            xref='paper',
-            yref='paper',
+            xref="paper",
+            yref="paper",
             text=text_to_display,
             showarrow=False,
             font=dict(size=12),
         )
 
+    # Display average line and difference annotations if average_line is True
+    if average_line:
+        average_value = df[y_column].mean()
+        if horizontal:
+            fig.add_shape(
+                type="line",
+                x0=average_value,
+                x1=average_value,
+                y0=-0.5,
+                y1=len(df),
+                line=dict(color="red", width=2, dash="dash"),
+            )
+            for index, value in enumerate(df[y_column]):
+                diff = value - average_value
+                diff_text = f"Diff: {diff:.2f}"
+                diff_color = "red" if diff < 0 else ("black" if diff == 0 else "green")
+                fig.add_annotation(
+                    x=value + 0.4,
+                    y=df[x_column].iloc[index],
+                    text=diff_text,
+                    showarrow=False,
+                    xshift=20,
+                    font=dict(size=10, color=diff_color),
+                )
+        else:
+            fig.add_shape(
+                type="line",
+                x0=-0.5,
+                x1=len(df),
+                y0=average_value,
+                y1=average_value,
+                line=dict(color="red", width=2, dash="dash"),
+            )
+            for index, value in enumerate(df[y_column]):
+                diff = value - average_value
+                diff_text = f"Diff: {diff:.2f}"
+                diff_color = "red" if diff < 0 else ("black" if diff == 0 else "green")
+                fig.add_annotation(
+                    x=df[x_column].iloc[index],
+                    y=value,
+                    text=diff_text,
+                    showarrow=False,
+                    yshift=5,
+                    font=dict(size=10, color=diff_color),
+                )
+
     if title:
-        fig.update_layout(title=dict(text=title, x=0.5,
-                          font=dict(size=18, color='#333333')))
+        fig.update_layout(
+            title=dict(text=title, x=0.5, font=dict(size=18, color="#333333"))
+        )
 
     # Display the plot
     fig.update_layout(margin=dict(t=60, b=60, l=60, r=60))
     fig.show()
 
 
-def plot_group_bar_chart(dataframe: pd.DataFrame, x_column: str, values_column: str, group_column: str,
-                         title: str = None, colormap: str = 'viridis', horizontal: bool = False) -> None:
+def plot_double_bar_chart(
+    dataframe: pd.DataFrame,
+    x_column: str,
+    y_column_upper: str,
+    y_column_lower: str,
+    colormap: str = "viridis",
+    title: str = None,
+    show_number: bool = False,
+) -> None:
+    """
+     Generate a bar chart using the provided DataFrame.
+
+    Parameters:
+        dataframe (pd.DataFrame): The DataFrame containing the data for the bar chart.
+        x_column (str): The name of the column to be used for the x-axis of the chart.
+        y_column_upper (str): The name of the column to be used for the upper y-axis of the chart.
+        y_column_lower (str): The name of the column to be used for the lower y-axis of the chart.
+        colormap (str, optional): The name of the colormap to use for coloring the bars.
+                                  Default is 'viridis'.
+        title (str, optional): The title for the chart. If None, the chart will have no title.
+        show_number (bool, optional): If True, the values of each bar will be displayed at the top of the bar.
+                                      Default is False.
+
+    Returns:
+        None: The function displays the bar chart directly without returning anything.
+    """
+
+    # Step 1: Sort the DataFrame by the y_column_upper in descending order
+    df_upper = dataframe.sort_values(by=y_column_upper, ascending=False)
+
+    # Step 2: Sort the DataFrame by the y_column_lower in descending order
+    df_lower = dataframe.sort_values(by=y_column_lower, ascending=False)
+
+    # Create subplots with two rows
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05)
+
+    # Add vertical bar chart to the upper subplot
+    fig.add_trace(
+        go.Bar(
+            x=df_upper[x_column],
+            y=df_upper[y_column_upper],
+            marker=dict(color=df_upper[y_column_upper], colorscale=colormap),
+        ),
+        row=1,
+        col=1,
+    )
+    fig.update_xaxes(title_text=x_column, row=1, col=1)
+    fig.update_yaxes(title_text=y_column_upper, row=1, col=1)
+    # Display values at the top of each bar if show_number is True
+    if show_number:
+        for index, value in enumerate(df_upper[y_column_upper]):
+            fig.add_annotation(
+                x=df_upper[x_column].iloc[index],
+                y=value,
+                text=f"{value:.2f}",
+                showarrow=False,
+                yshift=5,
+                font=dict(size=12),
+                row=1,
+                col=1,
+            )
+
+    # Add vertical bar chart to the lower subplot
+    fig.add_trace(
+        go.Bar(
+            x=df_lower[x_column],
+            y=df_lower[y_column_lower],
+            marker=dict(color=df_lower[y_column_lower], colorscale=colormap),
+        ),
+        row=2,
+        col=1,
+    )
+    fig.update_xaxes(title_text=x_column, row=2, col=1)
+    fig.update_yaxes(title_text=y_column_lower, row=2, col=1)
+    # Display values at the top of each bar if show_number is True
+    if show_number:
+        for index, value in enumerate(df_lower[y_column_lower]):
+            fig.add_annotation(
+                x=df_lower[x_column].iloc[index],
+                y=value,
+                text=f"{value:.2f}",
+                showarrow=False,
+                yshift=5,
+                font=dict(size=12),
+                row=2,
+                col=1,
+            )
+
+    if title:
+        fig.update_layout(
+            title=dict(text=title, x=0.5, font=dict(size=18, color="#333333"))
+        )
+
+    # Display the plot
+    fig.update_layout(margin=dict(t=60, b=60, l=60, r=60))
+    fig.show()
+
+
+def plot_group_bar_chart(
+    dataframe: pd.DataFrame,
+    x_column: str,
+    values_column: str,
+    group_column: str,
+    title: str = None,
+    colormap: str = "viridis",
+    horizontal: bool = False,
+) -> None:
     """
     Generate a grouped bar chart using the provided DataFrame.
 
@@ -118,22 +291,37 @@ def plot_group_bar_chart(dataframe: pd.DataFrame, x_column: str, values_column: 
     """
 
     data_to_plot = dataframe.pivot(
-        index=group_column, columns=x_column, values=values_column)
+        index=group_column, columns=x_column, values=values_column
+    )
 
     # Create the grouped bar chart using Plotly
     fig = go.Figure()
 
     for col in data_to_plot.columns:
         if horizontal:
-            fig.add_trace(go.Bar(y=data_to_plot.index, x=data_to_plot[col], name=col, orientation='h',
-                                 marker=dict(colorscale=colormap)))
+            fig.add_trace(
+                go.Bar(
+                    y=data_to_plot.index,
+                    x=data_to_plot[col],
+                    name=col,
+                    orientation="h",
+                    marker=dict(colorscale=colormap),
+                )
+            )
         else:
-            fig.add_trace(go.Bar(x=data_to_plot.index, y=data_to_plot[col], name=col,
-                                 marker=dict(colorscale=colormap)))
+            fig.add_trace(
+                go.Bar(
+                    x=data_to_plot.index,
+                    y=data_to_plot[col],
+                    name=col,
+                    marker=dict(colorscale=colormap),
+                )
+            )
 
     # Set axis labels and title
-    fig.update_layout(title_text=title, xaxis_title=group_column,
-                      yaxis_title=values_column)
+    fig.update_layout(
+        title_text=title, xaxis_title=group_column, yaxis_title=values_column
+    )
 
     # Show legend
     fig.update_layout(showlegend=True)
@@ -142,8 +330,15 @@ def plot_group_bar_chart(dataframe: pd.DataFrame, x_column: str, values_column: 
     fig.show()
 
 
-def plot_stacked_bar_chart(dataframe: pd.DataFrame, x_column: str, values_column: str, group_column: str,
-                           title: str = None, colormap: str = 'viridis', horizontal: bool = False) -> None:
+def plot_stacked_bar_chart(
+    dataframe: pd.DataFrame,
+    x_column: str,
+    values_column: str,
+    group_column: str,
+    title: str = None,
+    colormap: str = "viridis",
+    horizontal: bool = False,
+) -> None:
     """
     Generate a stacked bar chart using the provided DataFrame.
 
@@ -163,25 +358,38 @@ def plot_stacked_bar_chart(dataframe: pd.DataFrame, x_column: str, values_column
     """
 
     data_to_plot = dataframe.pivot(
-        index=x_column, columns=group_column, values=values_column)
+        index=x_column, columns=group_column, values=values_column
+    )
 
     # Create the stacked bar chart using Plotly
     fig = go.Figure()
 
     for col in data_to_plot.columns:
         if horizontal:
-            fig.add_trace(go.Bar(y=data_to_plot.index, x=data_to_plot[col], name=col, orientation='h',
-                                 marker=dict(colorscale=colormap)))
+            fig.add_trace(
+                go.Bar(
+                    y=data_to_plot.index,
+                    x=data_to_plot[col],
+                    name=col,
+                    orientation="h",
+                    marker=dict(colorscale=colormap),
+                )
+            )
         else:
-            fig.add_trace(go.Bar(x=data_to_plot.index, y=data_to_plot[col], name=col,
-                                 marker=dict(colorscale=colormap)))
+            fig.add_trace(
+                go.Bar(
+                    x=data_to_plot.index,
+                    y=data_to_plot[col],
+                    name=col,
+                    marker=dict(colorscale=colormap),
+                )
+            )
 
     # Set axis labels and title
-    fig.update_layout(title_text=title, xaxis_title=x_column,
-                      yaxis_title=values_column)
+    fig.update_layout(title_text=title, xaxis_title=x_column, yaxis_title=values_column)
 
     # Set barmode to 'stack' to stack the bars vertically
-    fig.update_layout(barmode='stack')
+    fig.update_layout(barmode="stack")
 
     # Show legend
     fig.update_layout(showlegend=True)
@@ -190,8 +398,79 @@ def plot_stacked_bar_chart(dataframe: pd.DataFrame, x_column: str, values_column
     fig.show()
 
 
-def plot_line_chart(dataframe: pd.DataFrame, x_column: str, y_columns: list, colormap: str = 'tab20',
-                    title: str = None, xlabel: str = None, ylabel: str = None) -> None:
+def plot_double_stacked_bar_chart(
+    dataframe: pd.DataFrame,
+    x_column: str,
+    y_column_upper: str,
+    y_column_lower: str,
+    group_column: str,
+    title: str = None,
+    colormap: str = "viridis",
+) -> None:
+    """
+    Generate two individual stacked bar charts using the provided DataFrame.
+
+    Parameters:
+        dataframe (pd.DataFrame): The DataFrame containing the data for the stacked bar charts.
+        x_column (str): The name of the column to be used for the x-axis of the charts.
+        y_column_upper (str): The name of the column to be used for the upper y-axis of the charts.
+        y_column_lower (str): The name of the column to be used for the lower y-axis of the charts.
+        group_column (str): The name of the column to be used for grouping the stacked bars.
+        title (str, optional): The title for the charts. If None, the charts will have no title.
+        colormap (str, optional): The name of the colormap to use for coloring the bars.
+                                  Default is 'viridis'.
+
+    Returns:
+        None: The function displays the stacked bar charts directly without returning anything.
+    """
+
+    data_to_plot_upper = dataframe.pivot(
+        index=x_column, columns=group_column, values=y_column_upper
+    )
+    data_to_plot_lower = dataframe.pivot(
+        index=x_column, columns=group_column, values=y_column_lower
+    )
+
+    # Create subplots with two rows and one column
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.1)
+
+    for i, data_to_plot in enumerate([data_to_plot_upper, data_to_plot_lower]):
+        for col in data_to_plot.columns:
+            fig.add_trace(
+                go.Bar(
+                    x=data_to_plot.index,
+                    y=data_to_plot[col],
+                    name=col,
+                    marker=dict(colorscale=colormap),
+                ),
+                row=i + 1,
+                col=1,
+            )
+
+    # Set axis labels and title
+    fig.update_layout(title_text=title, xaxis_title=x_column)
+    fig.update_yaxes(title_text=y_column_upper, row=1, col=1)
+    fig.update_yaxes(title_text=y_column_lower, row=2, col=1)
+
+    # Set barmode to 'stack' to stack the bars vertically
+    fig.update_layout(barmode="stack")
+
+    # Show legend
+    fig.update_layout(showlegend=True)
+
+    # Display the plot
+    fig.show()
+
+
+def plot_line_chart(
+    dataframe: pd.DataFrame,
+    x_column: str,
+    y_columns: list,
+    colormap: str = "tab20",
+    title: str = None,
+    xlabel: str = None,
+    ylabel: str = None,
+) -> None:
     """
     Generate a line chart with multiple lines using the provided DataFrame.
 
@@ -214,8 +493,14 @@ def plot_line_chart(dataframe: pd.DataFrame, x_column: str, y_columns: list, col
 
     # Add each line to the figure
     for column in y_columns:
-        fig.add_trace(go.Scatter(
-            x=dataframe[x_column], y=dataframe[column], mode='lines+markers', name=column))
+        fig.add_trace(
+            go.Scatter(
+                x=dataframe[x_column],
+                y=dataframe[column],
+                mode="lines+markers",
+                name=column,
+            )
+        )
 
     # Update layout for axis labels and title
     if xlabel:
@@ -225,62 +510,163 @@ def plot_line_chart(dataframe: pd.DataFrame, x_column: str, y_columns: list, col
     if title:
         fig.update_layout(title_text=title)
 
-      # Set barmode to 'stack' to stack the bars vertically
-   # fig.update_layout(barmode='stack')
+    # Set barmode to 'stack' to stack the bars vertically
+    # fig.update_layout(barmode='stack')
 
     # Display the plot
     fig.show()
 
 
-def plot_combined_line_and_bar_chart(dataframe: pd.DataFrame, x_column: str, line_columns: list,
-                                     bar_column: str, title: str = None, xlabel: str = None,
-                                     ylabel_line: str = None, ylabel_bar: str = None):
+def plot_category_line_chart(
+    dataframe: pd.DataFrame,
+    x_column: str,
+    y_column: str,
+    category_column: str,
+    title: str = None,
+    xlabel: str = None,
+    ylabel: str = None,
+    marker: bool = False,
+):
     """
-    Generate a chart that combines a line chart and a bar chart using the provided DataFrame.
+    Create a line chart with multiple lines using the provided DataFrame.
 
     Parameters:
-        dataframe (pd.DataFrame): The DataFrame containing the data for the charts.
-        x_column (str): The name of the column to be used for the x-axis of the chart.
-        line_columns (list): The names of the columns to be used for the y-axis of the line chart (multiple lines).
-        bar_column (str): The name of the column to be used for the bar chart.
+        dataframe (pd.DataFrame): The DataFrame containing the data for the line chart.
+        x_column (str): The name of the column to be used for the x-axis of the chart (dates).
+        y_column (str): The name of the column to be used for the y-axis of the chart (numerical values).
+        category_column (str): The name of the column used for grouping and creating individual lines.
         title (str, optional): The title for the chart. If None, the chart will have no title.
-        xlabel (str, optional): The label for the x-axis. If None, the x-axis will have no label.
-        ylabel_line (str, optional): The label for the y-axis of the line chart. If None, the y-axis will have no label.
-        ylabel_bar (str, optional): The label for the y-axis of the bar chart. If None, the y-axis will have no label.
+        xlabel (str, optional): The label for the x-axis. If None, no label will be displayed.
+        ylabel (str, optional): The label for the y-axis. If None, no label will be displayed.
+        marker (bool, optional): If True, data points will be marked. If False, data points will not be marked.
+                                Default is False.
 
     Returns:
-        None: The function displays the combined chart directly without returning anything.
+        None: The function displays the line chart directly without returning anything.
     """
+    # Get unique categories and generate colors dynamically
+    unique_categories = dataframe[category_column].unique()
+    num_categories = len(unique_categories)
+    colors = px.colors.qualitative.Set1[:num_categories]
 
-    # Create a subplot with two rows and one column
-    fig = make_subplots(rows=2, cols=1, subplot_titles=(
-        "Line Chart", "Bar Chart"))
+    fig = px.line(
+        dataframe,
+        x=x_column,
+        y=y_column,
+        color=category_column,
+        title=title,
+        labels={x_column: xlabel, y_column: ylabel},
+        color_discrete_sequence=colors,
+    )
 
-    # Add each line to the line chart subplot
-    for i, column in enumerate(line_columns):
-        fig.add_trace(go.Scatter(
-            x=dataframe[x_column], y=dataframe[column], mode='lines+markers', name=column), row=1, col=1)
+    # Add markers if the "marker" parameter is True
+    if marker:
+        fig.update_traces(mode="markers+lines")
 
-    # Add the bar chart to the bar chart subplot
-    fig.add_trace(go.Bar(
-        x=dataframe[x_column], y=dataframe[bar_column], name=bar_column), row=2, col=1)
-
-    # Update layout for axis labels and title
-    if xlabel:
-        fig.update_xaxes(title_text=xlabel, row=1, col=1)
-    if ylabel_line:
-        fig.update_yaxes(title_text=ylabel_line, row=1, col=1)
-    if ylabel_bar:
-        fig.update_yaxes(title_text=ylabel_bar, row=2, col=1)
-    if title:
-        fig.update_layout(title_text=title)
-
-    # Display the plot
     fig.show()
 
 
-def plot_scatter_plot(dataframe: pd.DataFrame, x_column: str, y_column: str, colormap: str = 'Viridis',
-                      title: str = None, xlabel: str = None, ylabel: str = None, color_column: str = None) -> None:
+def plot_category_line_stacked_bar_chart(
+    dataframe: pd.DataFrame,
+    x_column: str,
+    y_column: str,
+    category_column: str,
+    title: str = None,
+    xlabel: str = None,
+    ylabel: str = None,
+    marker: bool = False,
+    bar_title: str = "Bar Chart",
+):
+    """
+    Create a line chart with multiple lines and a bar chart using the provided DataFrame.
+
+    Parameters:
+        dataframe (pd.DataFrame): The DataFrame containing the data for the line and bar charts.
+        x_column (str): The name of the column to be used for the x-axis of both charts (dates).
+        y_column (str): The name of the column to be used for the y-axis of the line chart (values).
+        category_column (str): The name of the column used for grouping and creating individual lines and bars.
+        title (str, optional): The title for the line chart. If None, no title will be displayed.
+        xlabel (str, optional): The label for the x-axis of both charts. If None, no label will be displayed.
+        ylabel (str, optional): The label for the y-axis of the line chart. If None, no label will be displayed.
+        marker (bool, optional): If True, data points will be marked in the line chart. If False, data points will not be marked.
+                                Default is False.
+        bar_title (str, optional): The title for the bar chart. If None, no title will be displayed.
+
+    Returns:
+        None: The function displays the line and bar charts directly without returning anything.
+    """
+    # Get unique categories and generate colors dynamically
+    unique_categories = dataframe[category_column].unique()
+    num_categories = len(unique_categories)
+    colors = px.colors.qualitative.Set1[:num_categories]
+
+    # Calculate total sum of values for each date for the bar chart
+    bar_data = (
+        dataframe.groupby([x_column, category_column])[y_column].sum().reset_index()
+    )
+
+    # Create subplots with 2 rows and 1 column
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.1,
+        # subplot_titles=[title, bar_title]
+    )
+
+    # Line plot
+    line_fig = px.line(
+        dataframe,
+        x=x_column,
+        y=y_column,
+        color=category_column,
+        labels={x_column: xlabel, y_column: ylabel} if xlabel and ylabel else None,
+        color_discrete_sequence=colors,
+    )
+
+    if marker:
+        line_fig.update_traces(mode="markers+lines")
+
+    for trace in line_fig.data:
+        fig.add_trace(trace, row=1, col=1)
+
+    # Stacked bar plot
+    bar_fig = px.bar(
+        bar_data,
+        x=x_column,
+        y=y_column,
+        color=category_column,
+        labels={x_column: xlabel, y_column: ylabel} if xlabel and ylabel else None,
+        color_discrete_sequence=colors,
+    )
+
+    for trace in bar_fig.data:
+        trace.showlegend = False  # Hide legend for the bar chart
+
+        fig.add_trace(trace, row=2, col=1)
+
+    fig.update_layout(barmode="stack")
+
+    # Update layout
+    fig.update_layout(title_text=title)
+    fig.update_yaxes(title_text=ylabel, row=1, col=1)
+    # fig.update_xaxes(title_text=xlabel, row=1, col=1)
+    fig.update_yaxes(title_text=ylabel, row=2, col=1)
+    fig.update_xaxes(title_text=xlabel, row=2, col=1)
+
+    fig.show()
+
+
+def plot_scatter_plot(
+    dataframe: pd.DataFrame,
+    x_column: str,
+    y_column: str,
+    colormap: str = "Viridis",
+    title: str = None,
+    xlabel: str = None,
+    ylabel: str = None,
+    color_column: str = None,
+) -> None:
     """
     Generate a scatter plot using the provided DataFrame.
 
@@ -301,57 +687,115 @@ def plot_scatter_plot(dataframe: pd.DataFrame, x_column: str, y_column: str, col
     """
 
     # Create the scatter plot using Plotly Express
-    fig = px.scatter(dataframe, x=x_column, y=y_column, color=color_column, color_continuous_scale=colormap,
-                     labels={x_column: xlabel, y_column: ylabel}, title=title)
+    fig = px.scatter(
+        dataframe,
+        x=x_column,
+        y=y_column,
+        color=color_column,
+        color_continuous_scale=colormap,
+        labels={x_column: xlabel, y_column: ylabel},
+        title=title,
+    )
 
     # Customize legend title
     if color_column:
-        fig.update_layout(legend_title_text='Categories')
+        fig.update_layout(legend_title_text="Categories")
 
     # Display the plot
     fig.show()
 
 
-def plot_bubble_chart(dataframe: pd.DataFrame, x_column: str, y_column: str, size_column: str, colormap: str = 'Viridis',
-                      title: str = None, xlabel: str = None, ylabel: str = None, color_column: str = None) -> None:
+def plot_bubble_chart(
+    dataframe: pd.DataFrame,
+    x_column: str,
+    y_column: str,
+    size_column: str,
+    colormap: str = "Viridis",
+    title: str = None,
+    xlabel: str = None,
+    ylabel: str = None,
+    color_column: str = None,
+    column_info: str = None,
+    average_line: bool = False,
+    average_color: bool = False,
+):
     """
-    Generate a bubble chart using the provided DataFrame.
+    Create a bubble chart using the provided DataFrame.
 
     Parameters:
         dataframe (pd.DataFrame): The DataFrame containing the data for the bubble chart.
         x_column (str): The name of the column to be used for the x-axis of the chart.
         y_column (str): The name of the column to be used for the y-axis of the chart.
         size_column (str): The name of the column to be used for the size of the bubbles.
-        colormap (str, optional): The name of the color scale to use for coloring the data points.
-                                  Default is 'Viridis'.
+        colormap (str, optional): The name of the colormap to use for coloring the bubbles. Default is 'Viridis'.
         title (str, optional): The title for the chart. If None, the chart will have no title.
-        xlabel (str, optional): The label for the x-axis. If None, the x-axis will have no label.
-        ylabel (str, optional): The label for the y-axis. If None, the y-axis will have no label.
-        color_column (str, optional): The name of the column to be used for coloring the data points based on
-                                      distinct values in this column.
+        xlabel (str, optional): The label for the x-axis. If None, no label will be displayed.
+        ylabel (str, optional): The label for the y-axis. If None, no label will be displayed.
+        color_column (str, optional): The name of the column to be used for coloring the bubbles by category.
+                                     If None, no color differentiation will be applied.
+        column_info (str, optional): The name of the column to be used for displaying additional information
+                                    inside the bubbles. If None, no information will be displayed.
+        average_line (bool, optional): If True, a black dashed line will be added to indicate the average of y values.
+                                      If False, the line will not be added. Default is False.
+        average_color (bool, optional): If True, bubbles with below average size will be surrounded by a thick red line,
+                                       and bubbles with above average size will be surrounded by a thick green line.
+                                       If False, no coloring around the bubbles will be applied. Default is False.
 
     Returns:
         None: The function displays the bubble chart directly without returning anything.
     """
+    if colormap == "Viridis":
+        colormap_sequence = px.colors.sequential.Viridis
+    else:
+        colormap_sequence = px.colors.qualitative[colormap]
 
-    # Create the bubble chart using Plotly Express
-    fig = px.scatter(dataframe, x=x_column, y=y_column, size=size_column, color=color_column,
-                     color_continuous_scale=colormap, hover_name=color_column)
+    fig = px.scatter(
+        dataframe,
+        x=x_column,
+        y=y_column,
+        size=size_column,
+        color=color_column,
+        color_discrete_sequence=colormap_sequence,
+        labels={x_column: xlabel, y_column: ylabel},
+        hover_name=column_info,
+        custom_data=[size_column],
+    )
 
-    # Adding labels and title
-    if xlabel:
-        fig.update_xaxes(title_text=xlabel)
-    if ylabel:
-        fig.update_yaxes(title_text=ylabel)
-    if title:
-        fig.update_layout(title_text=title)
+    if average_line:
+        avg_y = dataframe[y_column].mean()
+        avg_line = go.layout.Shape(
+            type="line",
+            x0=min(dataframe[x_column]) - 0.5,
+            x1=max(dataframe[x_column]) + 0.5,
+            y0=avg_y,
+            y1=avg_y,
+            line=dict(color="black", dash="dash"),
+        )
+        fig.add_shape(avg_line)
 
-    # Display the plot
+    if average_color:
+        avg_size = dataframe[size_column].mean()
+        for trace in fig.data:
+            if trace.customdata[0] < avg_size:
+                trace.marker.line.width = 2
+                trace.marker.line.color = "red"
+            else:
+                trace.marker.line.width = 2
+                trace.marker.line.color = "green"
+
     fig.show()
 
 
-def plot_heatmap(dataframe: pd.DataFrame, x_column: str, y_column: str, values_column: str, colormap: str = 'Viridis',
-                 title: str = None, xlabel: str = None, ylabel: str = None):
+def plot_heatmap(
+    dataframe: pd.DataFrame,
+    x_column: str,
+    y_column: str,
+    values_column: str,
+    colormap: str = "Viridis",
+    title: str = None,
+    xlabel: str = None,
+    ylabel: str = None,
+):
     """
     Generate a heatmap using the provided DataFrame.
 
@@ -371,12 +815,19 @@ def plot_heatmap(dataframe: pd.DataFrame, x_column: str, y_column: str, values_c
     """
 
     # Pivot the DataFrame to get the data in a suitable format for the heatmap
-    pivot_df = dataframe.pivot(
-        index=y_column, columns=x_column, values=values_column)
+    pivot_df = dataframe.pivot(index=y_column, columns=x_column, values=values_column)
 
     # Create the heatmap using Plotly
-    fig = go.Figure(data=go.Heatmap(z=pivot_df.values, x=pivot_df.columns, y=pivot_df.index,
-                                    colorscale=colormap, zmin=pivot_df.min().min(), zmax=pivot_df.max().max()))
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=pivot_df.values,
+            x=pivot_df.columns,
+            y=pivot_df.index,
+            colorscale=colormap,
+            zmin=pivot_df.min().min(),
+            zmax=pivot_df.max().max(),
+        )
+    )
 
     # Adding labels and title
     if xlabel:
@@ -390,7 +841,9 @@ def plot_heatmap(dataframe: pd.DataFrame, x_column: str, y_column: str, values_c
     fig.show()
 
 
-def plot_correlation_heatmap(dataframe: pd.DataFrame, colormap: str = 'RdBu', title: str = None):
+def plot_correlation_heatmap(
+    dataframe: pd.DataFrame, colormap: str = "RdBu", title: str = None
+):
     """
     Generate a correlation heatmap using the provided DataFrame.
 
@@ -408,24 +861,41 @@ def plot_correlation_heatmap(dataframe: pd.DataFrame, colormap: str = 'RdBu', ti
     corr_matrix = dataframe.corr()
 
     # Create the heatmap using Plotly
-    fig = go.Figure(data=go.Heatmap(z=corr_matrix.values, x=corr_matrix.columns, y=corr_matrix.index,
-                                    colorscale=colormap, zmin=-1, zmax=1, reversescale=True))
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=corr_matrix.values,
+            x=corr_matrix.columns,
+            y=corr_matrix.index,
+            colorscale=colormap,
+            zmin=-1,
+            zmax=1,
+            reversescale=True,
+        )
+    )
 
     # Adding labels and title
     fig.update_layout(
         title=title,
         xaxis=dict(tickfont=dict(size=12), tickangle=-45),
         yaxis=dict(tickfont=dict(size=12)),
-        coloraxis_colorbar=dict(title='Correlation',
-                                titlefont=dict(size=14), ticks='inside')
+        coloraxis_colorbar=dict(
+            title="Correlation", titlefont=dict(size=14), ticks="inside"
+        ),
     )
 
     # Display the plot
     fig.show()
 
 
-def plot_histogram(dataframe: pd.DataFrame, column: str, bins: int = 10,
-                   colormap: str = 'Viridis', title: str = None, xlabel: str = None, ylabel: str = None):
+def plot_histogram(
+    dataframe: pd.DataFrame,
+    column: str,
+    bins: int = 10,
+    colormap: str = "Viridis",
+    title: str = None,
+    xlabel: str = None,
+    ylabel: str = None,
+):
     """
     Generate a histogram using the provided DataFrame.
 
@@ -446,8 +916,9 @@ def plot_histogram(dataframe: pd.DataFrame, column: str, bins: int = 10,
     # Create the histogram using Plotly
     fig = go.Figure()
 
-    fig.add_trace(go.Histogram(
-        x=dataframe[column], nbinsx=bins, marker_colorscale=colormap))
+    fig.add_trace(
+        go.Histogram(x=dataframe[column], nbinsx=bins, marker_colorscale=colormap)
+    )
 
     # Adding labels and title
     fig.update_layout(
@@ -455,15 +926,22 @@ def plot_histogram(dataframe: pd.DataFrame, column: str, bins: int = 10,
         xaxis_title=xlabel,
         yaxis_title=ylabel,
         xaxis=dict(title_font=dict(size=14)),
-        yaxis=dict(title_font=dict(size=14))
+        yaxis=dict(title_font=dict(size=14)),
     )
 
     # Display the plot
     fig.show()
 
 
-def plot_stacked_histogram(dataframe: pd.DataFrame, x_column: str, color_column: str,
-                           bins: int = 10, title: str = None, xlabel: str = None, ylabel: str = None):
+def plot_stacked_histogram(
+    dataframe: pd.DataFrame,
+    x_column: str,
+    color_column: str,
+    bins: int = 10,
+    title: str = None,
+    xlabel: str = None,
+    ylabel: str = None,
+):
     """
     Generate a stacked histogram using the provided DataFrame.
 
@@ -481,29 +959,33 @@ def plot_stacked_histogram(dataframe: pd.DataFrame, x_column: str, color_column:
     """
 
     # Create the stacked histogram using Plotly Express
-    fig = px.histogram(dataframe, x=x_column,
-                       color=color_column, nbins=bins, text_auto=True)
+    fig = px.histogram(
+        dataframe, x=x_column, color=color_column, nbins=bins, text_auto=True
+    )
 
     # Customize the layout
     if title:
-        fig.update_layout(title_text=title, title_font=dict(
-            size=16, color='#333333'))
+        fig.update_layout(title_text=title, title_font=dict(size=16, color="#333333"))
 
     if xlabel:
-        fig.update_xaxes(title_text=xlabel, title_font=dict(
-            size=14, color='#333333'))
+        fig.update_xaxes(title_text=xlabel, title_font=dict(size=14, color="#333333"))
 
     if ylabel:
-        fig.update_yaxes(title_text=ylabel, title_font=dict(
-            size=14, color='#333333'))
+        fig.update_yaxes(title_text=ylabel, title_font=dict(size=14, color="#333333"))
 
     # Show the plot
     fig.show()
 
 
-def plot_box_plot(dataframe: pd.DataFrame, x_column: str, y_column: str,
-                  title: str = None, xlabel: str = None, ylabel: str = None,
-                  point: str = None):
+def plot_box_plot(
+    dataframe: pd.DataFrame,
+    x_column: str,
+    y_column: str,
+    title: str = None,
+    xlabel: str = None,
+    ylabel: str = None,
+    point: str = None,
+):
     """
     Generate a box plot using the provided DataFrame.
 
@@ -514,7 +996,7 @@ def plot_box_plot(dataframe: pd.DataFrame, x_column: str, y_column: str,
         title (str, optional): The title for the box plot. If None, the box plot will have no title.
         xlabel (str, optional): The label for the x-axis. If None, the x-axis will have no label.
         ylabel (str, optional): The label for the y-axis. If None, the y-axis will have no label.
-        point (str, optional): The points of the DataFrame. If all, then points are visible.  
+        point (str, optional): The points of the DataFrame. If all, then points are visible.
     Returns:
         None: The function displays the box plot directly without returning anything.
     """
@@ -524,23 +1006,25 @@ def plot_box_plot(dataframe: pd.DataFrame, x_column: str, y_column: str,
 
     # Customize the layout
     if title:
-        fig.update_layout(title_text=title, title_font=dict(
-            size=16, color='#333333'))
+        fig.update_layout(title_text=title, title_font=dict(size=16, color="#333333"))
 
     if xlabel:
-        fig.update_xaxes(title_text=xlabel, title_font=dict(
-            size=14, color='#333333'))
+        fig.update_xaxes(title_text=xlabel, title_font=dict(size=14, color="#333333"))
 
     if ylabel:
-        fig.update_yaxes(title_text=ylabel, title_font=dict(
-            size=14, color='#333333'))
+        fig.update_yaxes(title_text=ylabel, title_font=dict(size=14, color="#333333"))
 
     # Show the plot
     fig.show()
 
 
-def plot_treemap(dataframe: pd.DataFrame, path_column: str, values_column: str,
-                 title: str = None, color_column: str = None):
+def plot_treemap(
+    dataframe: pd.DataFrame,
+    path_column: str,
+    values_column: str,
+    title: str = None,
+    color_column: str = None,
+):
     """
     Generate a treemap using the provided DataFrame.
 
@@ -557,13 +1041,18 @@ def plot_treemap(dataframe: pd.DataFrame, path_column: str, values_column: str,
     """
 
     # Create the treemap using Plotly Express
-    fig = px.treemap(dataframe, path=[path_column], values=values_column, color=color_column,
-                     color_continuous_scale='Blues', hover_data=[values_column])
+    fig = px.treemap(
+        dataframe,
+        path=[path_column],
+        values=values_column,
+        color=color_column,
+        color_continuous_scale="Blues",
+        hover_data=[values_column],
+    )
 
     # Customize the layout
     if title:
-        fig.update_layout(title_text=title, title_font=dict(
-            size=16, color='#333333'))
+        fig.update_layout(title_text=title, title_font=dict(size=16, color="#333333"))
 
     # Show the plot
     fig.show()
