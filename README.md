@@ -43,8 +43,4 @@ Each plot type has its own dedicated folder containing example code and visuals 
 
 Feel free to contribute to this repository by adding more example plots, improving existing ones, or adding more documentation. Fork the repository, create a new branch, make your changes, and submit a pull request.
 
-## License
-
-This repository is licensed under the [MIT License](LICENSE).
-
 Happy plotting!
