@@ -1,7 +1,42 @@
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
+import plotly.io as pio
+import plotly.offline as pyo
+from typing import Optional, List
+
+
+def create_table(
+    dataframe: pd.DataFrame,
+    title: str = "Interactive Tables",
+    columns: Optional[List[str]] = None,
+) -> go.Figure:
+    """
+    Creates an interactive Plotly table from a Pandas DataFrame.
+
+    Args:
+        dataframe (pd.DataFrame): The Pandas DataFrame containing the data.
+        title (str, optional): Title of the table. Defaults to 'Interactive Tables'.
+        columns (List[str], optional): List of column names to display in the table. Defaults to None (all columns).
+
+    Returns:
+        None
+    """
+    if columns is None:
+        columns = dataframe.columns
+
+    header = columns
+    data = dataframe[columns].values.T.tolist()  # Transpose the data to match columns
+
+    fig = go.Figure(
+        data=[go.Table(header=dict(values=header), cells=dict(values=data))]
+    )
+
+    fig.update_layout(title=title, width=600, height=400)
+
+    return fig
 
 
 def plot_bar_chart(
@@ -14,7 +49,7 @@ def plot_bar_chart(
     show_mean_median: bool = False,
     show_number: bool = False,
     average_line: bool = False,
-) -> None:
+) -> go.Figure:
     """
      Generate a bar chart using the provided DataFrame.
 
@@ -162,7 +197,7 @@ def plot_bar_chart(
 
     # Display the plot
     fig.update_layout(margin=dict(t=60, b=60, l=60, r=60))
-    fig.show()
+    return fig
 
 
 def plot_double_bar_chart(
@@ -173,7 +208,7 @@ def plot_double_bar_chart(
     colormap: str = "viridis",
     title: str = None,
     show_number: bool = False,
-) -> None:
+) -> go.Figure:
     """
      Generate a bar chart using the provided DataFrame.
 
@@ -260,7 +295,7 @@ def plot_double_bar_chart(
 
     # Display the plot
     fig.update_layout(margin=dict(t=60, b=60, l=60, r=60))
-    fig.show()
+    return fig
 
 
 def plot_group_bar_chart(
@@ -271,7 +306,7 @@ def plot_group_bar_chart(
     title: str = None,
     colormap: str = "viridis",
     horizontal: bool = False,
-) -> None:
+) -> go.Figure:
     """
     Generate a grouped bar chart using the provided DataFrame.
 
@@ -327,7 +362,7 @@ def plot_group_bar_chart(
     fig.update_layout(showlegend=True)
 
     # Display the plot
-    fig.show()
+    return fig
 
 
 def plot_stacked_bar_chart(
@@ -338,7 +373,7 @@ def plot_stacked_bar_chart(
     title: str = None,
     colormap: str = "viridis",
     horizontal: bool = False,
-) -> None:
+) -> go.Figure:
     """
     Generate a stacked bar chart using the provided DataFrame.
 
@@ -395,7 +430,7 @@ def plot_stacked_bar_chart(
     fig.update_layout(showlegend=True)
 
     # Display the plot
-    fig.show()
+    return fig
 
 
 def plot_double_stacked_bar_chart(
@@ -406,7 +441,7 @@ def plot_double_stacked_bar_chart(
     group_column: str,
     title: str = None,
     colormap: str = "viridis",
-) -> None:
+) -> go.Figure:
     """
     Generate two individual stacked bar charts using the provided DataFrame.
 
@@ -459,7 +494,7 @@ def plot_double_stacked_bar_chart(
     fig.update_layout(showlegend=True)
 
     # Display the plot
-    fig.show()
+    return fig
 
 
 def plot_line_chart(
@@ -470,7 +505,7 @@ def plot_line_chart(
     title: str = None,
     xlabel: str = None,
     ylabel: str = None,
-) -> None:
+) -> go.Figure:
     """
     Generate a line chart with multiple lines using the provided DataFrame.
 
@@ -514,7 +549,7 @@ def plot_line_chart(
     # fig.update_layout(barmode='stack')
 
     # Display the plot
-    fig.show()
+    return fig
 
 
 def plot_category_line_chart(
@@ -526,7 +561,7 @@ def plot_category_line_chart(
     xlabel: str = None,
     ylabel: str = None,
     marker: bool = False,
-):
+) -> go.Figure:
     """
     Create a line chart with multiple lines using the provided DataFrame.
 
@@ -563,7 +598,7 @@ def plot_category_line_chart(
     if marker:
         fig.update_traces(mode="markers+lines")
 
-    fig.show()
+    return fig
 
 
 def plot_category_line_stacked_bar_chart(
@@ -576,7 +611,7 @@ def plot_category_line_stacked_bar_chart(
     ylabel: str = None,
     marker: bool = False,
     bar_title: str = "Bar Chart",
-):
+) -> go.Figure:
     """
     Create a line chart with multiple lines and a bar chart using the provided DataFrame.
 
@@ -654,7 +689,7 @@ def plot_category_line_stacked_bar_chart(
     fig.update_yaxes(title_text=ylabel, row=2, col=1)
     fig.update_xaxes(title_text=xlabel, row=2, col=1)
 
-    fig.show()
+    return fig
 
 
 def plot_scatter_plot(
@@ -666,7 +701,7 @@ def plot_scatter_plot(
     xlabel: str = None,
     ylabel: str = None,
     color_column: str = None,
-) -> None:
+) -> go.Figure:
     """
     Generate a scatter plot using the provided DataFrame.
 
@@ -702,7 +737,7 @@ def plot_scatter_plot(
         fig.update_layout(legend_title_text="Categories")
 
     # Display the plot
-    fig.show()
+    return fig
 
 
 def plot_bubble_chart(
@@ -718,7 +753,7 @@ def plot_bubble_chart(
     column_info: str = None,
     average_line: bool = False,
     average_color: bool = False,
-):
+) -> go.Figure:
     """
     Create a bubble chart using the provided DataFrame.
 
@@ -783,7 +818,7 @@ def plot_bubble_chart(
                 trace.marker.line.width = 2
                 trace.marker.line.color = "green"
 
-    fig.show()
+    return fig
 
 
 def plot_heatmap(
@@ -795,7 +830,7 @@ def plot_heatmap(
     title: str = None,
     xlabel: str = None,
     ylabel: str = None,
-):
+) -> go.Figure:
     """
     Generate a heatmap using the provided DataFrame.
 
@@ -838,12 +873,12 @@ def plot_heatmap(
         fig.update_layout(title_text=title)
 
     # Display the plot
-    fig.show()
+    return fig
 
 
 def plot_correlation_heatmap(
     dataframe: pd.DataFrame, colormap: str = "RdBu", title: str = None
-):
+) -> go.Figure:
     """
     Generate a correlation heatmap using the provided DataFrame.
 
@@ -884,7 +919,7 @@ def plot_correlation_heatmap(
     )
 
     # Display the plot
-    fig.show()
+    return fig
 
 
 def plot_histogram(
@@ -895,7 +930,7 @@ def plot_histogram(
     title: str = None,
     xlabel: str = None,
     ylabel: str = None,
-):
+) -> go.Figure:
     """
     Generate a histogram using the provided DataFrame.
 
@@ -930,7 +965,7 @@ def plot_histogram(
     )
 
     # Display the plot
-    fig.show()
+    return fig
 
 
 def plot_stacked_histogram(
@@ -941,7 +976,7 @@ def plot_stacked_histogram(
     title: str = None,
     xlabel: str = None,
     ylabel: str = None,
-):
+) -> go.Figure:
     """
     Generate a stacked histogram using the provided DataFrame.
 
@@ -974,7 +1009,7 @@ def plot_stacked_histogram(
         fig.update_yaxes(title_text=ylabel, title_font=dict(size=14, color="#333333"))
 
     # Show the plot
-    fig.show()
+    return fig
 
 
 def plot_box_plot(
@@ -985,7 +1020,7 @@ def plot_box_plot(
     xlabel: str = None,
     ylabel: str = None,
     point: str = None,
-):
+) -> go.Figure:
     """
     Generate a box plot using the provided DataFrame.
 
@@ -1015,7 +1050,7 @@ def plot_box_plot(
         fig.update_yaxes(title_text=ylabel, title_font=dict(size=14, color="#333333"))
 
     # Show the plot
-    fig.show()
+    return fig
 
 
 def plot_treemap(
@@ -1024,7 +1059,7 @@ def plot_treemap(
     values_column: str,
     title: str = None,
     color_column: str = None,
-):
+) -> go.Figure:
     """
     Generate a treemap using the provided DataFrame.
 
@@ -1055,4 +1090,41 @@ def plot_treemap(
         fig.update_layout(title_text=title, title_font=dict(size=16, color="#333333"))
 
     # Show the plot
-    fig.show()
+    return fig
+
+
+def generate_html_with_charts(chart_list, filename="charts.html"):
+    """
+    Generate an HTML file containing Plotly charts.
+
+    Parameters:
+        chart_list (list): List of Plotly chart variables.
+        filename (str, optional): Name of the HTML file to be generated. Defaults to 'charts.html'.
+
+    Returns:
+        None
+    """
+    # Create an empty div to hold the charts
+    div_content = ""
+
+    # Iterate through the chart_list and generate HTML for each chart
+    for chart in chart_list:
+        div_content += pyo.plot(chart, output_type="div")
+
+    # Create the full HTML content
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Charts</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    </head>
+    <body>
+        {div_content}
+    </body>
+    </html>
+    """
+
+    # Write the HTML content to the file
+    with open(filename, "w") as f:
+        f.write(html_content)
