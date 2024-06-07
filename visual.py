@@ -661,11 +661,29 @@ def plot_combined_bar_line_chart(
     return fig
 
 
+import pandas as pd
+import plotly.graph_objects as go
+
+# Define the color palettes
+color_pallet = [
+    "#4870C6",
+    "#77A984",
+    "#19BAB6",
+    "#A6E9AB",
+    "#E1EE92",
+    "#FFF773",
+    "#FF7569",
+    "#E18EbA",
+    "#FFC5EA",
+    "#6D6BCF",
+]
+color_white = "#ECEEEF"
+
+
 def plot_line_chart(
     dataframe: pd.DataFrame,
     x_column: str,
     y_columns: list,
-    colormap: str = "tab20",
     title: str = None,
     xlabel: str = None,
     ylabel: str = None,
@@ -677,43 +695,59 @@ def plot_line_chart(
         dataframe (pd.DataFrame): The DataFrame containing the data for the line chart.
         x_column (str): The name of the column to be used for the x-axis of the chart.
         y_columns (list): The names of the columns to be used for the y-axis of the chart (multiple lines).
-        colormap (str, optional): The name of the colormap to use for coloring the lines.
-                                  Default is 'tab20'.
         title (str, optional): The title for the chart. If None, the chart will have no title.
         xlabel (str, optional): The label for the x-axis. If None, the x-axis will have no label.
         ylabel (str, optional): The label for the y-axis. If None, the y-axis will have no label.
 
     Returns:
-        None: The function displays the line chart directly without returning anything.
+        go.Figure: The function generates and returns the line chart using Plotly.
     """
 
     # Create the line chart using Plotly
     fig = go.Figure()
 
-    # Add each line to the figure
-    for column in y_columns:
+    # Add each line to the figure with colors from the provided palette
+    for i, column in enumerate(y_columns):
         fig.add_trace(
             go.Scatter(
                 x=dataframe[x_column],
                 y=dataframe[column],
                 mode="lines+markers",
                 name=column,
+                line=dict(color=color_pallet[i % len(color_pallet)]),
             )
         )
 
     # Update layout for axis labels and title
-    if xlabel:
-        fig.update_xaxes(title_text=xlabel)
-    if ylabel:
-        fig.update_yaxes(title_text=ylabel)
-    if title:
-        fig.update_layout(title_text=title)
+    fig.update_layout(
+        title=dict(text=title, x=0.5, font=dict(size=18, color="#333333")),
+        xaxis=dict(title=xlabel),
+        yaxis=dict(title=ylabel),
+        plot_bgcolor=color_white,
+        paper_bgcolor=color_white,
+    )
 
-    # Set barmode to 'stack' to stack the bars vertically
-    # fig.update_layout(barmode='stack')
-
-    # Display the plot
     return fig
+
+
+# Example usage
+data = {
+    "Month": ["January", "February", "March", "April"],
+    "Sales": [200, 150, 300, 250],
+    "Profit": [50, 60, 80, 90],
+    "Expenses": [100, 80, 150, 120],
+}
+df = pd.DataFrame(data)
+
+# Test the function
+fig = plot_line_chart(
+    dataframe=df,
+    x_column="Month",
+    y_columns=["Sales", "Profit", "Expenses"],
+    title="Monthly Financial Metrics",
+    xlabel="Month",
+    ylabel="Values",
+)
 
 
 def plot_category_line_chart(
@@ -765,7 +799,26 @@ def plot_category_line_chart(
     return fig
 
 
-def plot_category_line_stacked_bar_chart(
+import pandas as pd
+import plotly.graph_objects as go
+
+# Define the color palettes
+color_pallet = [
+    "#4870C6",
+    "#77A984",
+    "#19BAB6",
+    "#A6E9AB",
+    "#E1EE92",
+    "#FFF773",
+    "#FF7569",
+    "#E18EbA",
+    "#FFC5EA",
+    "#6D6BCF",
+]
+color_white = "#ECEEEF"
+
+
+def plot_category_line_chart(
     dataframe: pd.DataFrame,
     x_column: str,
     y_column: str,
@@ -774,86 +827,70 @@ def plot_category_line_stacked_bar_chart(
     xlabel: str = None,
     ylabel: str = None,
     marker: bool = False,
-    bar_title: str = "Bar Chart",
 ) -> go.Figure:
     """
-    Create a line chart with multiple lines and a bar chart using the provided DataFrame.
+    Create a line chart with multiple lines using the provided DataFrame.
 
     Parameters:
-        dataframe (pd.DataFrame): The DataFrame containing the data for the line and bar charts.
-        x_column (str): The name of the column to be used for the x-axis of both charts (dates).
-        y_column (str): The name of the column to be used for the y-axis of the line chart (values).
-        category_column (str): The name of the column used for grouping and creating individual lines and bars.
-        title (str, optional): The title for the line chart. If None, no title will be displayed.
-        xlabel (str, optional): The label for the x-axis of both charts. If None, no label will be displayed.
-        ylabel (str, optional): The label for the y-axis of the line chart. If None, no label will be displayed.
-        marker (bool, optional): If True, data points will be marked in the line chart. If False, data points will not be marked.
+        dataframe (pd.DataFrame): The DataFrame containing the data for the line chart.
+        x_column (str): The name of the column to be used for the x-axis of the chart (dates).
+        y_column (str): The name of the column to be used for the y-axis of the chart (numerical values).
+        category_column (str): The name of the column used for grouping and creating individual lines.
+        title (str, optional): The title for the chart. If None, the chart will have no title.
+        xlabel (str, optional): The label for the x-axis. If None, no label will be displayed.
+        ylabel (str, optional): The label for the y-axis. If None, no label will be displayed.
+        marker (bool, optional): If True, data points will be marked. If False, data points will not be marked.
                                 Default is False.
-        bar_title (str, optional): The title for the bar chart. If None, no title will be displayed.
 
     Returns:
-        None: The function displays the line and bar charts directly without returning anything.
+        go.Figure: The function generates and returns the line chart using Plotly.
     """
-    # Get unique categories and generate colors dynamically
+
+    fig = go.Figure()
+
     unique_categories = dataframe[category_column].unique()
-    num_categories = len(unique_categories)
-    colors = px.colors.qualitative.Set1[:num_categories]
 
-    # Calculate total sum of values for each date for the bar chart
-    bar_data = (
-        dataframe.groupby([x_column, category_column])[y_column].sum().reset_index()
+    # Add each category as a separate trace with colors from the provided palette
+    for i, category in enumerate(unique_categories):
+        category_data = dataframe[dataframe[category_column] == category]
+        fig.add_trace(
+            go.Scatter(
+                x=category_data[x_column],
+                y=category_data[y_column],
+                mode="lines+markers" if marker else "lines",
+                name=category,
+                line=dict(color=color_pallet[i % len(color_pallet)]),
+            )
+        )
+
+    # Update layout for axis labels and title
+    fig.update_layout(
+        title=dict(text=title, x=0.5, font=dict(size=18, color="#333333")),
+        xaxis=dict(title=xlabel),
+        yaxis=dict(title=ylabel),
+        plot_bgcolor=color_white,
+        paper_bgcolor=color_white,
     )
-
-    # Create subplots with 2 rows and 1 column
-    fig = make_subplots(
-        rows=2,
-        cols=1,
-        shared_xaxes=True,
-        vertical_spacing=0.1,
-        # subplot_titles=[title, bar_title]
-    )
-
-    # Line plot
-    line_fig = px.line(
-        dataframe,
-        x=x_column,
-        y=y_column,
-        color=category_column,
-        labels={x_column: xlabel, y_column: ylabel} if xlabel and ylabel else None,
-        color_discrete_sequence=colors,
-    )
-
-    if marker:
-        line_fig.update_traces(mode="markers+lines")
-
-    for trace in line_fig.data:
-        fig.add_trace(trace, row=1, col=1)
-
-    # Stacked bar plot
-    bar_fig = px.bar(
-        bar_data,
-        x=x_column,
-        y=y_column,
-        color=category_column,
-        labels={x_column: xlabel, y_column: ylabel} if xlabel and ylabel else None,
-        color_discrete_sequence=colors,
-    )
-
-    for trace in bar_fig.data:
-        trace.showlegend = False  # Hide legend for the bar chart
-
-        fig.add_trace(trace, row=2, col=1)
-
-    fig.update_layout(barmode="stack")
-
-    # Update layout
-    fig.update_layout(title_text=title)
-    fig.update_yaxes(title_text=ylabel, row=1, col=1)
-    # fig.update_xaxes(title_text=xlabel, row=1, col=1)
-    fig.update_yaxes(title_text=ylabel, row=2, col=1)
-    fig.update_xaxes(title_text=xlabel, row=2, col=1)
 
     return fig
+
+
+# Example usage
+data = {
+    "Date": [
+        "2021-01",
+        "2021-02",
+        "2021-03",
+        "2021-04",
+        "2021-01",
+        "2021-02",
+        "2021-03",
+        "2021-04",
+    ],
+    "Value": [100, 150, 200, 250, 80, 120, 160, 200],
+    "Category": ["A", "A", "A", "A", "B", "B", "B", "B"],
+}
+df = pd.DataFrame(data)
 
 
 def plot_scatter_plot(
