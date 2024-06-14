@@ -1585,3 +1585,175 @@ def generate_html_with_charts(chart_list, filename="charts.html"):
     # Write the HTML content to the file
     with open(filename, "w") as f:
         f.write(html_content)
+
+
+import pandas as pd
+import plotly.graph_objects as go
+
+# Define the color palettes
+color_pallet_blue = ["#2167AE", "#23366F", "#5495CF", "#91BFE3", "#1FB1E6"]
+color_pallet = [
+    "#4870C6",
+    "#77A984",
+    "#19BAB6",
+    "#A6E9AB",
+    "#E1EE92",
+    "#FFF773",
+    "#FF7569",
+    "#E18EbA",
+    "#FFC5EA",
+    "#6D6BCF",
+]
+
+
+def plot_bar_chart(
+    dataframe: pd.DataFrame,
+    x_column: str,
+    y_column: str,
+    title: str = None,
+    horizontal: bool = False,
+    show_mean_median: bool = False,
+    show_number: bool = False,
+    average_line: bool = False,
+    use_blue_palette: bool = False,
+) -> go.Figure:
+    """
+    Generate a customizable bar chart using the provided DataFrame.
+
+    Parameters:
+        dataframe (pd.DataFrame): The DataFrame containing the data for the bar chart.
+        x_column (str): The column name for the x-axis of the chart.
+        y_column (str): The column name for the y-axis of the chart.
+        title (str, optional): The title for the chart. If None, the chart will have no title.
+        horizontal (bool, optional): If True, create a horizontal bar chart. Default is False (vertical bar chart).
+        show_mean_median (bool, optional): Display mean and median values in the top-right corner of the chart.
+                                           Default is False.
+        show_number (bool, optional): Display values on top of each bar. Default is False.
+        average_line (bool, optional): Add a dashed line representing the average value. Default is False.
+        use_blue_palette (bool, optional): Use the blue color palette. Default is False.
+
+    Returns:
+        go.Figure: The configured bar chart as a Plotly Figure object.
+
+    Note:
+        This function creates a bar chart with customizable features including orientation,
+        color scheme, annotations, average line, and more.
+    """
+    # Step 1: Sort the DataFrame by the y_column in descending order
+    df = dataframe.sort_values(by=y_column, ascending=False)
+
+    # Choose the color palette
+    colors = color_pallet_blue if use_blue_palette else color_pallet
+
+    # Create the bar plot using Plotly
+    fig = go.Figure()
+
+    # Add the bar chart
+    if horizontal:
+        fig.add_trace(
+            go.Bar(
+                y=df[x_column],
+                x=df[y_column],
+                orientation="h",
+                marker=dict(
+                    color=colors * (len(df) // len(colors) + 1)
+                ),  # Ensure enough colors
+            )
+        )
+        fig.update_xaxes(title_text=y_column)
+        fig.update_yaxes(title_text=x_column)
+        fig.update_layout(yaxis=dict(autorange="reversed"))
+    else:
+        fig.add_trace(
+            go.Bar(
+                x=df[x_column],
+                y=df[y_column],
+                marker=dict(
+                    color=colors * (len(df) // len(colors) + 1)
+                ),  # Ensure enough colors
+            )
+        )
+        fig.update_xaxes(title_text=x_column)
+        fig.update_yaxes(title_text=y_column)
+
+    # Display values at the top of each bar if show_number is True
+    if show_number:
+        for index, value in enumerate(df[y_column]):
+            annotation = dict(
+                text=f"{value:.2f}",
+                showarrow=False,
+                font=dict(size=12),
+            )
+            if horizontal:
+                annotation.update(x=value, y=df[x_column].iloc[index], xshift=20)
+            else:
+                annotation.update(x=df[x_column].iloc[index], y=value, yshift=5)
+            fig.add_annotation(annotation)
+
+    # Display mean and median values if show_mean_median is True
+    if show_mean_median:
+        mean_value = df[y_column].mean()
+        median_value = df[y_column].median()
+        text_to_display = f"Mean: {mean_value:.2f}<br>Median: {median_value:.2f}"
+        fig.add_annotation(
+            x=0.99,
+            y=0.01 if horizontal else 0.99,
+            xref="paper",
+            yref="paper",
+            text=text_to_display,
+            showarrow=False,
+            font=dict(size=12),
+            align="right",
+        )
+
+    # Display average line and difference annotations if average_line is True
+    if average_line:
+        average_value = df[y_column].mean()
+        shape = dict(type="line", line=dict(color="red", width=2, dash="dash"))
+        if horizontal:
+            shape.update(x0=average_value, x1=average_value, y0=-0.5, y1=len(df) - 0.5)
+        else:
+            shape.update(x0=-0.5, x1=len(df) - 0.5, y0=average_value, y1=average_value)
+        fig.add_shape(shape)
+
+        for index, value in enumerate(df[y_column]):
+            diff = value - average_value
+            diff_text = f"Diff: {diff:.2f}"
+            diff_color = "red" if diff < 0 else ("black" if diff == 0 else "green")
+            annotation = dict(
+                text=diff_text,
+                showarrow=False,
+                font=dict(size=10, color=diff_color),
+            )
+            if horizontal:
+                annotation.update(x=value + 0.4, y=df[x_column].iloc[index], xshift=-40)
+            else:
+                annotation.update(x=df[x_column].iloc[index], y=value, yshift=20)
+            fig.add_annotation(annotation)
+
+    if title:
+        fig.update_layout(
+            title=dict(text=title, x=0.5, font=dict(size=18, color="#333333"))
+        )
+
+    fig.update_layout(margin=dict(t=60, b=60, l=60, r=60))
+
+    return fig
+
+
+# Example usage
+data = {"Category": ["A", "B", "G", "D", "E", "F"], "Value": [15, 25, 10, 20, 30, 40]}
+df = pd.DataFrame(data)
+
+fig = plot_bar_chart(
+    df,
+    x_column="Category",
+    y_column="Value",
+    horizontal=False,
+    show_mean_median=True,
+    average_line=True,
+    show_number=True,
+    title="Surprise",
+    use_blue_palette=True,
+)
+fig.show()
